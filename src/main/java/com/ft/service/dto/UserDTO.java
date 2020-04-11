@@ -49,6 +49,9 @@ public class UserDTO {
     private Instant lastModifiedDate;
 
     private Set<String> authorities;
+    
+    // + support change password from admin
+    private String password;
 
     public UserDTO() {
         // Empty constructor needed for Jackson.
@@ -193,4 +196,14 @@ public class UserDTO {
             ", authorities=" + authorities +
             "}";
     }
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+    
+    
 }

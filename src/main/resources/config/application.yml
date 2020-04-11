@@ -31,7 +31,7 @@ management:
         include: ['configprops', 'env', 'gateway', 'health', 'info', 'jhimetrics', 'logfile', 'loggers', 'prometheus', 'threaddump']
   endpoint:
     health:
-      show-details: when_authorized
+      show-details: always
       roles: 'ROLE_ADMIN'
     jhimetrics:
       enabled: true
@@ -70,6 +70,18 @@ spring:
   application:
     name: apiGateway
   cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+    consul:
+      discovery:
+        healthCheckPath: /management/health
+        instanceId: apigateway:${spring.application.instance-id:${random.value}}
+        service-name: apigateway
+      config:
+        watch:
+          enabled: false
+
     gateway:
       default-filters:
         - JWTRelay

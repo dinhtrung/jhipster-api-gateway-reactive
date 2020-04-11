@@ -329,6 +329,15 @@
             <artifactId>metrics-core</artifactId>
         </dependency>
         <!-- jhipster-needle-maven-add-dependency -->
+<!-- PROJECT SPECIFIC REQUIREMENTS -->
+        <!-- MINIO FILE UPLOAD -->
+		<dependency>
+		    <groupId>io.minio</groupId>
+		    <artifactId>minio</artifactId>
+		    <version>7.0.1</version>
+		</dependency>
+		<!-- /MINIO FILE UPLOAD -->
+<!-- / PROJECT SPECIFIC REQUIREMENTS -->		
     </dependencies>
 
     <build>

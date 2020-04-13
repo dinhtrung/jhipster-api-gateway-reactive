@@ -38,7 +38,7 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/?waitQueueMultiple=1000
-      database: apiGateway
+      database: api_gateway
   mail:
     host: localhost
     port: 25

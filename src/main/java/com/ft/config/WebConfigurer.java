@@ -57,7 +57,8 @@ public class WebConfigurer implements WebFluxConfigurer {
     @Override
     public void configureArgumentResolvers(ArgumentResolverConfigurer configurer) {
         configurer.addCustomResolver(new ReactiveSortHandlerMethodArgumentResolver(),
-            new ReactivePageableHandlerMethodArgumentResolver());
+            new ReactivePageableHandlerMethodArgumentResolver(),
+            new ReactiveQuerydslPredicateArgumentResolver());
     }
 
     @Bean

@@ -92,6 +92,13 @@
                 <scope>import</scope>
             </dependency>
             <!-- jhipster-needle-maven-add-dependency-management -->
+            <dependency>
+	            <groupId>software.amazon.awssdk</groupId>
+	            <artifactId>bom</artifactId>
+	            <version>2.10.1</version>
+	            <type>pom</type>
+	            <scope>import</scope>
+	        </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -330,6 +337,12 @@
         </dependency>
         <!-- jhipster-needle-maven-add-dependency -->
 <!-- PROJECT SPECIFIC REQUIREMENTS -->
+<dependency>
+	<groupId>org.projectlombok</groupId>
+	<artifactId>lombok</artifactId>
+	<scope>provided</scope>
+</dependency>
+
         <!-- MINIO FILE UPLOAD -->
 		<dependency>
 		    <groupId>io.minio</groupId>
@@ -337,6 +350,17 @@
 		    <version>7.0.1</version>
 		</dependency>
 		<!-- /MINIO FILE UPLOAD -->
+		<dependency>
+	        <groupId>software.amazon.awssdk</groupId>
+	        <artifactId>s3</artifactId>
+	        <scope>compile</scope>
+	    </dependency>
+	 
+	    <dependency>
+	        <artifactId>netty-nio-client</artifactId>
+	        <groupId>software.amazon.awssdk</groupId>
+	        <scope>compile</scope>
+	    </dependency>
 <!-- / PROJECT SPECIFIC REQUIREMENTS -->		
     </dependencies>
 
@@ -452,6 +476,11 @@
                                 <version>${mapstruct.version}</version>
                             </path>
                             <!-- jhipster-needle-maven-add-annotation-processor -->
+                            <path>
+					            <groupId>org.projectlombok</groupId>
+					            <artifactId>lombok</artifactId>
+					            <version>1.18.12</version>
+					        </path>
                         </annotationProcessorPaths>
                     </configuration>
                 </plugin>

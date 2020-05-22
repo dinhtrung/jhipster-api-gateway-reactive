@@ -1,6 +1,7 @@
 package com.ft.repository;
 
 import com.ft.domain.Authority;
+
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 
 /**

@@ -58,12 +58,17 @@ public class AuditEventService {
      */
     @Scheduled(cron = "0 0 12 * * ?")
     public void removeOldAuditEvents() {
-        persistenceAuditEventRepository
+        removeOldAuditEventsReactively().block();
+    }
+
+    public Mono<Void> removeOldAuditEventsReactively() {
+        return persistenceAuditEventRepository
             .findByAuditEventDateBefore(Instant.now().minus(jHipsterProperties.getAuditEvents().getRetentionPeriod(), ChronoUnit.DAYS))
             .flatMap(auditEvent -> {
                 log.debug("Deleting audit data {}", auditEvent);
                 return persistenceAuditEventRepository.delete(auditEvent);
-            }).blockLast();
+            })
+            .then();
     }
 
     public Flux<AuditEvent> findAll(Pageable pageable) {

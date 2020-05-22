@@ -97,5 +97,4 @@ public class SecurityConfiguration {
         // @formatter:on
         return http.build();
     }
-
 }

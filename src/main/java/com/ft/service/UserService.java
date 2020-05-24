@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -53,7 +54,7 @@ public class UserService {
                 // activate given user for the registration key.
                 user.setActivated(true);
                 user.setActivationKey(null);
-                return updateUser(user);
+                return saveUser(user);
             })
             .doOnNext(user -> log.debug("Activated user: {}", user));
     }
@@ -62,22 +63,26 @@ public class UserService {
         log.debug("Reset user password for reset key {}", key);
         return userRepository.findOneByResetKey(key)
             .filter(user -> user.getResetDate().isAfter(Instant.now().minusSeconds(86400)))
-            .flatMap(user -> {
+            .publishOn(Schedulers.boundedElastic())
+            .map(user -> {
                 user.setPassword(passwordEncoder.encode(newPassword));
                 user.setResetKey(null);
                 user.setResetDate(null);
-                return updateUser(user);
-            });
+                return user;
+            })
+            .flatMap(this::saveUser);
     }
 
     public Mono<User> requestPasswordReset(String mail) {
         return userRepository.findOneByEmailIgnoreCase(mail)
             .filter(User::getActivated)
-            .flatMap(user -> {
+            .publishOn(Schedulers.boundedElastic())
+            .map(user -> {
                 user.setResetKey(RandomUtil.generateResetKey());
                 user.setResetDate(Instant.now());
-                return updateUser(user);
-            });
+                return user;
+            })
+            .flatMap(this::saveUser);
     }
 
     public Mono<User> registerUser(UserDTO userDTO, String password) {
@@ -97,8 +102,9 @@ public class UserService {
                     return Mono.error(new EmailAlreadyUsedException());
                 }
             })
-            .thenReturn(new User())
-            .flatMap(newUser -> {
+            .publishOn(Schedulers.boundedElastic())
+            .then(Mono.fromCallable(() -> {
+                User newUser = new User();
                 String encryptedPassword = passwordEncoder.encode(password);
                 newUser.setLogin(userDTO.getLogin().toLowerCase());
                 // new user gets initially a generated password
@@ -114,12 +120,15 @@ public class UserService {
                 newUser.setActivated(false);
                 // new user gets registration key
                 newUser.setActivationKey(RandomUtil.generateActivationKey());
+                return newUser;
+            }))
+            .flatMap(newUser -> {
                 Set<Authority> authorities = new HashSet<>();
                 return authorityRepository.findById(AuthoritiesConstants.USER)
                     .map(authorities::add)
                     .thenReturn(newUser)
                     .doOnNext(user -> user.setAuthorities(authorities))
-                    .flatMap(this::createUser)
+                    .flatMap(this::saveUser)
                     .doOnNext(user -> log.debug("Created Information for User: {}", user));
             });
     }
@@ -138,42 +147,21 @@ public class UserService {
         } else {
             user.setLangKey(userDTO.getLangKey());
         }
-        String encryptedPassword = passwordEncoder.encode(userDTO.getPassword() != null ? userDTO.getPassword() :  RandomUtil.generatePassword());
-        user.setPassword(encryptedPassword);
-        user.setResetKey(RandomUtil.generateResetKey());
-        user.setResetDate(Instant.now());
-        user.setActivated(true);
-        return Flux.fromIterable(Optional.ofNullable(userDTO.getAuthorities()).orElse(new HashSet<>()))
+        return Flux.fromIterable(userDTO.getAuthorities() != null ? userDTO.getAuthorities() : new HashSet<>())
             .flatMap(authorityRepository::findById)
             .doOnNext(authority -> user.getAuthorities().add(authority))
-            .then(createUser(user))
-            .doOnNext(user1 -> log.debug("Created Information for User: {}", user1));
-    }
-
-    /**
-     * Update basic information (first name, last name, email, language) for the current user.
-     *
-     * @param firstName first name of user.
-     * @param lastName  last name of user.
-     * @param email     email id of user.
-     * @param langKey   language key.
-     * @param imageUrl  image URL of user.
-     */
-    public Mono<Void> updateUser(String firstName, String lastName, String email, String langKey, String imageUrl) {
-        return SecurityUtils.getCurrentUserLogin()
-            .flatMap(userRepository::findOneByLogin)
-            .flatMap(user -> {
-                user.setFirstName(firstName);
-                user.setLastName(lastName);
-                if (email != null) {
-                    user.setEmail(email.toLowerCase());
-                }
-                user.setLangKey(langKey);
-                user.setImageUrl(imageUrl);
-                return updateUser(user);
+            .then(Mono.just(user))
+            .publishOn(Schedulers.boundedElastic())
+            .map(newUser -> {
+                String encryptedPassword = passwordEncoder.encode((userDTO.getPassword() != null) && !userDTO.getPassword().isEmpty() ? userDTO.getPassword() :  RandomUtil.generatePassword());
+                newUser.setPassword(encryptedPassword);
+                newUser.setResetKey(RandomUtil.generateResetKey());
+                newUser.setResetDate(Instant.now());
+                newUser.setActivated(true);
+                return newUser;
             })
-            .doOnNext(user -> log.debug("Changed Information for User: {}", user))
-            .then();
+            .flatMap(this::saveUser)
+            .doOnNext(user1 -> log.debug("Created Information for User: {}", user1));
     }
 
     /**
@@ -203,28 +191,9 @@ public class UserService {
                     .map(managedAuthorities::add)
                     .then(Mono.just(user));
             })
-            .flatMap(this::updateUser)
+            .flatMap(this::saveUser)
             .doOnNext(user -> log.debug("Changed Information for User: {}", user))
             .map(UserDTO::new);
-    }
-
-    private Mono<User> updateUser(User user) {
-        return SecurityUtils.getCurrentUserLogin()
-            .switchIfEmpty(Mono.just(Constants.SYSTEM_ACCOUNT))
-            .flatMap(login -> {
-                user.setLastModifiedBy(login);
-                return userRepository.save(user);
-            });
-    }
-
-    private Mono<User> createUser(User user) {
-        return SecurityUtils.getCurrentUserLogin()
-            .switchIfEmpty(Mono.just(Constants.SYSTEM_ACCOUNT))
-            .flatMap(login -> {
-                user.setCreatedBy(login);
-                user.setLastModifiedBy(login);
-                return userRepository.save(user);
-            });
     }
 
     public Mono<Void> deleteUser(String login) {
@@ -234,18 +203,58 @@ public class UserService {
             .then();
     }
 
-    public Mono<Void> changePassword(String currentClearTextPassword, String newPassword) {
+    /**
+     * Update basic information (first name, last name, email, language) for the current user.
+     *
+     * @param firstName first name of user.
+     * @param lastName  last name of user.
+     * @param email     email id of user.
+     * @param langKey   language key.
+     * @param imageUrl  image URL of user.
+     */
+    public Mono<Void> updateUser(String firstName, String lastName, String email, String langKey, String imageUrl) {
         return SecurityUtils.getCurrentUserLogin()
             .flatMap(userRepository::findOneByLogin)
             .flatMap(user -> {
+                user.setFirstName(firstName);
+                user.setLastName(lastName);
+                if (email != null) {
+                    user.setEmail(email.toLowerCase());
+                }
+                user.setLangKey(langKey);
+                user.setImageUrl(imageUrl);
+                return saveUser(user);
+            })
+            .doOnNext(user -> log.debug("Changed Information for User: {}", user))
+            .then();
+    }
+
+    private Mono<User> saveUser(User user) {
+        return SecurityUtils.getCurrentUserLogin()
+            .switchIfEmpty(Mono.just(Constants.SYSTEM_ACCOUNT))
+            .flatMap(login -> {
+                if (user.getCreatedBy() == null) {
+                    user.setCreatedBy(login);
+                }
+                user.setLastModifiedBy(login);
+                return userRepository.save(user);
+            });
+    }
+
+    public Mono<Void> changePassword(String currentClearTextPassword, String newPassword) {
+        return SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin)
+            .publishOn(Schedulers.boundedElastic())
+            .map(user -> {
                 String currentEncryptedPassword = user.getPassword();
                 if (!passwordEncoder.matches(currentClearTextPassword, currentEncryptedPassword)) {
-                    return Mono.error(new InvalidPasswordException());
+                    throw new InvalidPasswordException();
                 }
                 String encryptedPassword = passwordEncoder.encode(newPassword);
                 user.setPassword(encryptedPassword);
-                return updateUser(user);
+                return user;
             })
+            .flatMap(this::saveUser)
             .doOnNext(user -> log.debug("Changed password for User: {}", user))
             .then();
     }
@@ -262,10 +271,6 @@ public class UserService {
         return userRepository.findOneByLogin(login);
     }
 
-    public Mono<User> getUserWithAuthorities(String id) {
-        return userRepository.findById(id);
-    }
-
     public Mono<User> getUserWithAuthorities() {
         return SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
     }
@@ -277,11 +282,14 @@ public class UserService {
      */
     @Scheduled(cron = "0 0 1 * * ?")
     public void removeNotActivatedUsers() {
-        userRepository
+        removeNotActivatedUsersReactively().blockLast();
+    }
+
+    public Flux<User> removeNotActivatedUsersReactively() {
+        return userRepository
             .findAllByActivatedIsFalseAndActivationKeyIsNotNullAndCreatedDateBefore(Instant.now().minus(3, ChronoUnit.DAYS))
             .flatMap(user -> userRepository.delete(user).thenReturn(user))
-            .doOnNext(user -> log.debug("Deleted User: {}", user))
-            .blockLast();
+            .doOnNext(user -> log.debug("Deleted User: {}", user));
     }
 
     /**

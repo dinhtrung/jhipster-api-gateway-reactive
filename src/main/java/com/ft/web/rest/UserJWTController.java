@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import javax.validation.Valid;
 
@@ -45,7 +46,7 @@ public class UserJWTController {
                 .authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()))
                 .onErrorResume(throwable -> onAuthenticationError(login, throwable))
                 .flatMap(auth -> onAuthenticationSuccess(login, auth))
-                .map(auth -> tokenProvider.createToken(auth, Boolean.TRUE.equals(login.isRememberMe())))
+                .flatMap(auth -> Mono.fromCallable(() -> tokenProvider.createToken(auth, Boolean.TRUE.equals(login.isRememberMe()))))
             )
             .map(jwt -> {
                 HttpHeaders httpHeaders = new HttpHeaders();
@@ -64,10 +65,10 @@ public class UserJWTController {
 
     private Mono<? extends Authentication> onAuthenticationError(LoginVM login, Throwable throwable) {
         return Mono.just(login)
-                .map(LoginVM::getUsername)
-                .filter(username -> !Constants.ANONYMOUS_USER.equals(username))
-                .flatMap(username -> auditEventService.saveAuthenticationError(username, throwable))
-                .then(Mono.error(throwable));
+            .map(LoginVM::getUsername)
+            .filter(username -> !Constants.ANONYMOUS_USER.equals(username))
+            .flatMap(username -> auditEventService.saveAuthenticationError(username, throwable))
+            .then(Mono.error(throwable));
     }
 
     /**

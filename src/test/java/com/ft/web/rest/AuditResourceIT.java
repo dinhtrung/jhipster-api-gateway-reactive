@@ -1,23 +1,15 @@
 package com.ft.web.rest;
 
 import com.ft.ApiGatewayApp;
-import com.ft.config.ReactivePageableHandlerMethodArgumentResolver;
-import io.github.jhipster.config.JHipsterProperties;
-import com.ft.config.audit.AuditEventConverter;
 import com.ft.domain.PersistentAuditEvent;
 import com.ft.repository.PersistenceAuditEventRepository;
 import com.ft.security.AuthoritiesConstants;
 
-import com.ft.service.AuditEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
-import org.springframework.format.support.FormattingConversionService;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.reactive.server.WebTestClient;

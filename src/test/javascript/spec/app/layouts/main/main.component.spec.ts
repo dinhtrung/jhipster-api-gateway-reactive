@@ -21,7 +21,7 @@ describe('Component Tests', () => {
       TestBed.configureTestingModule({
         imports: [ApiGatewayTestModule, TranslateModule.forRoot()],
         declarations: [MainComponent],
-        providers: [Title]
+        providers: [Title],
       })
         .overrideTemplate(MainComponent, '')
         .compileComponents();

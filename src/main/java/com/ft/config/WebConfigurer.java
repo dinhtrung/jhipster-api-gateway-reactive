@@ -11,12 +11,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.web.ReactivePageableHandlerMethodArgumentResolver;
+import org.springframework.data.web.ReactiveSortHandlerMethodArgumentResolver;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.reactive.config.ResourceHandlerRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
-import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer;
+import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver;
 import org.springframework.web.server.WebExceptionHandler;
 import org.zalando.problem.spring.webflux.advice.ProblemExceptionHandler;
 import org.zalando.problem.spring.webflux.advice.ProblemHandling;
@@ -53,11 +55,16 @@ public class WebConfigurer implements WebFluxConfigurer {
         return new CorsWebFilter(source);
     }
 
-    // TODO: remove when this is supported in spring-data / spring-boot
-    @Override
-    public void configureArgumentResolvers(ArgumentResolverConfigurer configurer) {
-        configurer.addCustomResolver(new ReactiveSortHandlerMethodArgumentResolver(),
-            new ReactivePageableHandlerMethodArgumentResolver());
+    // TODO: remove when this is supported in spring-boot
+    @Bean
+    HandlerMethodArgumentResolver reactivePageableHandlerMethodArgumentResolver() {
+        return new ReactivePageableHandlerMethodArgumentResolver();
+    }
+
+    // TODO: remove when this is supported in spring-boot
+    @Bean
+    HandlerMethodArgumentResolver reactiveSortHandlerMethodArgumentResolver() {
+        return new ReactiveSortHandlerMethodArgumentResolver();
     }
 
     @Bean

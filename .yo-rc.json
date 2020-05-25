@@ -4,7 +4,7 @@
       "packageName": "com.ft",
       "nativeLanguage": "en"
     },
-    "jhipsterVersion": "6.8.0",
+    "jhipsterVersion": "6.9.0",
     "applicationType": "gateway",
     "baseName": "apiGateway",
     "packageName": "com.ft",

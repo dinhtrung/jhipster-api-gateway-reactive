@@ -88,6 +88,7 @@ public class SecurityConfiguration {
             .pathMatchers("/api/account/reset-password/init").permitAll()
             .pathMatchers("/api/account/reset-password/finish").permitAll()
             .pathMatchers("/api/auth-info").permitAll()
+            .pathMatchers("/api/public/**").permitAll()
             .pathMatchers("/api/**").authenticated()
             .pathMatchers("/services/**", "/swagger-resources/**", "/v2/api-docs").authenticated()
             .pathMatchers("/management/health").permitAll()

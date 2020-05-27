@@ -66,6 +66,12 @@ public class WebConfigurer implements WebFluxConfigurer {
     HandlerMethodArgumentResolver reactiveSortHandlerMethodArgumentResolver() {
         return new ReactiveSortHandlerMethodArgumentResolver();
     }
+    
+    // TODO: remove when this is supported in spring-boot
+    @Bean
+    HandlerMethodArgumentResolver reactiveQuerydslPredicateArgumentResolver() {
+    	return new ReactiveQuerydslPredicateArgumentResolver();
+    }
 
     @Bean
     @Order(-2) // The handler must have precedence over WebFluxResponseStatusExceptionHandler and Spring Boot's ErrorWebExceptionHandler

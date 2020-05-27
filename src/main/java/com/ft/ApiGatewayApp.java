@@ -1,7 +1,7 @@
 package com.ft;
 
 import com.ft.config.ApplicationProperties;
-import com.ft.config.MinioConfiguration;
+import com.ft.config.S3Properties;
 
 import io.github.jhipster.config.DefaultProfileUtil;
 import io.github.jhipster.config.JHipsterConstants;
@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @SpringBootApplication
-@EnableConfigurationProperties({ApplicationProperties.class, MinioConfiguration.class})
+@EnableConfigurationProperties({ApplicationProperties.class, S3Properties.class})
 @EnableDiscoveryClient
 public class ApiGatewayApp {
 

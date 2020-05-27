@@ -16,11 +16,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ft.config.S3Properties;
@@ -39,6 +42,7 @@ import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
@@ -49,7 +53,7 @@ import software.amazon.awssdk.services.s3.model.UploadPartResponse;
  *
  */
 @RestController
-@RequestMapping("/api/public/file-upload")
+@RequestMapping("/api")
 @Slf4j
 public class UploadResource {
 
@@ -61,10 +65,20 @@ public class UploadResource {
         this.s3config = s3config;        
     }
     
+    @DeleteMapping("/upload-files/{filekey}")
+    public Mono<ResponseEntity<Void>> deleteFile(@PathVariable("filekey") String filekey) {
+    	return Mono.fromFuture(s3client.deleteObject(
+    			DeleteObjectRequest.builder()
+    			.bucket(s3config.getBucketName())
+    			.key(filekey)
+    			.build()
+    	)).map(response -> ((response.sdkHttpResponse() == null || !response.sdkHttpResponse().isSuccessful()) ? ResponseEntity.notFound() : ResponseEntity.noContent()).build());
+    }
+    
     /**
      *  Standard file upload.
      */
-    @PostMapping
+    @PostMapping("/upload-files")
     public Mono<ResponseEntity<UploadResult>> uploadHandler(@RequestHeader HttpHeaders headers, @RequestBody Flux<ByteBuffer> body) {
 
         long length = headers.getContentLength();
@@ -96,7 +110,7 @@ public class UploadResource {
               checkResult(response);
               return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(new UploadResult(HttpStatus.CREATED, new String[] {fileKey}));
+                .body(new UploadResult(HttpStatus.CREATED, new String[] { fileKey }));
           });
     }
     
@@ -108,15 +122,30 @@ public class UploadResource {
      * @param headers
      * @return
      */
-    @RequestMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, method = {RequestMethod.POST, RequestMethod.PUT})
+    @RequestMapping(value = "/upload-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, method = {RequestMethod.POST, RequestMethod.PUT})
     public Mono<ResponseEntity<UploadResult>> multipartUploadHandler(@RequestHeader HttpHeaders headers, @RequestBody Flux<Part> parts  ) {
-                
+        log.debug("multipartUploadHandler: headers: {}", headers);
         return parts
           .ofType(FilePart.class) // We'll ignore other data for now
           .flatMap(part -> saveFile(s3config.getBucketName(), part))
           .collectList()
           .map(keys -> ResponseEntity.status(HttpStatus.CREATED)
-            .body(new UploadResult(HttpStatus.CREATED, keys)));
+                  .body(new UploadResult(HttpStatus.CREATED, keys)));
+    }
+    
+    /**
+     * Upload single file
+     * @param headers
+     * @param parts
+     * @return
+     */
+    @RequestMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, method = {RequestMethod.POST, RequestMethod.PUT})
+    public Mono<ResponseEntity<String>> singlepartUploadHandler(@RequestHeader HttpHeaders headers, @RequestPart("file") Mono<Part> parts  ) {
+        log.debug("multipartUploadHandler: headers: {}", headers);
+        return parts
+          .ofType(FilePart.class) // We'll ignore other data for now
+          .flatMap(part -> saveFile(s3config.getBucketName(), part))
+          .map(keys -> ResponseEntity.status(HttpStatus.CREATED).body(keys));
     }
 
 

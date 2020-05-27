@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
  *
  */
 @RestController
-@RequestMapping("/api/public/file-download")
+@RequestMapping(value = { "/api/public/file-download", "/api/public/static" })
 @Slf4j
 public class DownloadResource {
     

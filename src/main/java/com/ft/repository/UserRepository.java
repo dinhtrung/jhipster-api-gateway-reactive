@@ -2,7 +2,6 @@ package com.ft.repository;
 
 import com.ft.domain.User;
 
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import org.springframework.stereotype.Repository;
@@ -26,8 +25,6 @@ public interface UserRepository extends ReactiveMongoRepository<User, String> {
     Mono<User> findOneByEmailIgnoreCase(String email);
 
     Mono<User> findOneByLogin(String login);
-
-
 
     Flux<User> findAllByLoginNot(Pageable pageable, String login);
 

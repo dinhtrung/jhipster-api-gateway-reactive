@@ -2,7 +2,6 @@ package com.ft.web.rest;
 
 import com.ft.ApiGatewayApp;
 import com.ft.config.Constants;
-import com.ft.domain.Authority;
 import com.ft.domain.User;
 import com.ft.repository.AuthorityRepository;
 import com.ft.repository.UserRepository;
@@ -13,7 +12,6 @@ import com.ft.service.dto.UserDTO;
 import com.ft.web.rest.vm.KeyAndPasswordVM;
 import com.ft.web.rest.vm.ManagedUserVM;
 import org.apache.commons.lang3.RandomStringUtils;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.*;
@@ -144,7 +141,7 @@ public class AccountResourceIT {
     @Test
     public void testRegisterInvalidLogin() throws Exception {
         ManagedUserVM invalidUser = new ManagedUserVM();
-        invalidUser.setLogin("funky-log!n");// <-- invalid
+        invalidUser.setLogin("funky-log(n");// <-- invalid
         invalidUser.setPassword("password");
         invalidUser.setFirstName("Funky");
         invalidUser.setLastName("One");
@@ -429,7 +426,6 @@ public class AccountResourceIT {
         user.setEmail("save-account@example.com");
         user.setPassword(RandomStringUtils.random(60));
         user.setActivated(true);
-
         userRepository.save(user).block();
 
         UserDTO userDTO = new UserDTO();
@@ -497,7 +493,6 @@ public class AccountResourceIT {
         user.setEmail("save-existing-email@example.com");
         user.setPassword(RandomStringUtils.random(60));
         user.setActivated(true);
-
         userRepository.save(user).block();
 
         User anotherUser = new User();
@@ -536,7 +531,6 @@ public class AccountResourceIT {
         user.setEmail("save-existing-email-and-login@example.com");
         user.setPassword(RandomStringUtils.random(60));
         user.setActivated(true);
-
         userRepository.save(user).block();
 
         UserDTO userDTO = new UserDTO();
@@ -684,12 +678,12 @@ public class AccountResourceIT {
         User user = new User();
         user.setPassword(RandomStringUtils.random(60));
         user.setActivated(true);
-        user.setLogin("password-reset");
-        user.setEmail("password-reset@example.com");
+        user.setLogin("password-reset-upper-case");
+        user.setEmail("password-reset-upper-case@example.com");
         userRepository.save(user).block();
 
         accountWebTestClient.post().uri("/api/account/reset-password/init")
-            .bodyValue("password-reset@EXAMPLE.COM")
+            .bodyValue("password-reset-upper-case@EXAMPLE.COM")
             .exchange()
             .expectStatus().isOk();
     }

@@ -19,7 +19,7 @@
     "prodDatabaseType": "mongodb",
     "searchEngine": false,
     "messageBroker": false,
-    "serviceDiscoveryType": false,
+    "serviceDiscoveryType": "consul",
     "buildTool": "maven",
     "enableSwaggerCodegen": false,
     "jwtSecretKey": "YTIzZDE5NjJkM2RjMmFmYzgyOWM4OTNiOGU2MWEwZjVjNzY3YzM0N2I4NDA2YWY4ODY5NTFiNDVkZjJjN2JlYThjNDljYzdmNTA4NjUwNjI0ZmIwYjdiODc1MTM4NWNjZDk1Y2ZjYzAzOTdlODg0YzI5MzgzYmE3OTg0OGM1MmU=",

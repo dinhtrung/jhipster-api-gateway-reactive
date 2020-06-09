@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import io.github.jhipster.config.JHipsterProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.jackson.io.JacksonSerializer;
 import io.jsonwebtoken.security.Keys;
 
 @Component
@@ -78,12 +79,14 @@ public class TokenProvider {
             .claim(AUTHORITIES_KEY, authorities)
             .signWith(key, SignatureAlgorithm.HS512)
             .setExpiration(validity)
+            .serializeToJsonWith(new JacksonSerializer())
             .compact();
     }
 
     public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parser()
+        Claims claims = Jwts.parserBuilder()
             .setSigningKey(key)
+            .build()
             .parseClaimsJws(token)
             .getBody();
 
@@ -99,7 +102,7 @@ public class TokenProvider {
 
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parser().setSigningKey(key).parseClaimsJws(authToken);
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(authToken);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             log.info("Invalid JWT token.");
